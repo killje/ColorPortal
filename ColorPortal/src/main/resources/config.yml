@@ -1,0 +1,12 @@
+# Thanks for downloading ColorPortals! #
+# Please tell me what you think! #
+
+usePermissions: true
+host: fieldsofzen.site.nfoservers.com:3306
+database: fieldsofzen_test
+username: fieldsofzen
+password: BakHhK8VpK
+
+portalTabel: colorPortal_portal
+channelTabel: colorPortal_channel
+shutdownOnError: true
