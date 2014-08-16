@@ -11,13 +11,17 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.StringTokenizer;
 import java.util.UUID;
 import java.util.logging.Level;
 import me.killje.colorportal.Query.QuaryCreateTable;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.DyeColor;
+import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.block.Sign;
 import org.bukkit.plugin.java.JavaPlugin;
 
 /**
@@ -115,13 +119,6 @@ public class ColorPortal2 extends JavaPlugin {
                 String owner = portal.get("owner");
                 String restriction = portal.get("restriction");
                 getLogger().info(channelNo + "");
-                if (!channels.containsKey(channelNo)) {
-                    Map<String, Object> newChannel = new HashMap<>();
-                    newChannel.put("owner", namesToUUID.get(owner).toString());
-                    newChannel.put("channel", channelNo);
-                    newChannel.put("restriction", restriction);//<<<<<<<<<<<<<<<---------------this needs to be solved!!!!!!!!!!!!!!!
-                    channels.put(channelNo, newChannel);
-                }
                 String[] keys = new String[8];
                 Object[] values = new Object[8];
                 keys[0] = "channelID";
@@ -140,9 +137,23 @@ public class ColorPortal2 extends JavaPlugin {
                 values[6] = portal.get("locationButton");
                 keys[7] = "locationButtonBlock";
                 values[7] = portal.get("locationButtonBlock");
-                statement.addBatch(portalQuery.insert(keys, values).getQuery());
+                StringTokenizer st = new StringTokenizer((String) values[4], ":");
+                if (signUpdater(new Location(
+                        getServer().getWorld((String) values[3]),
+                        Integer.parseInt(st.nextToken()),
+                        Integer.parseInt(st.nextToken()),
+                        Integer.parseInt(st.nextToken())), channelNo + ":" + (Integer) values[1])) {
+                    if (!channels.containsKey(channelNo)) {
+                        Map<String, Object> newChannel = new HashMap<>();
+                        newChannel.put("owner", namesToUUID.get(owner).toString());
+                        newChannel.put("channel", channelNo);
+                        newChannel.put("restriction", restriction);
+                        channels.put(channelNo, newChannel);
+                    }
+                    statement.addBatch(portalQuery.insert(keys, values).getQuery());
+                }
                 asdfasdfasfdasfafsddfasdfasdfasdfasdfasdfasdfasfadsdfasdfasfdasdfaadfsdfasdfasdfasdfasdfsdfasdfasdfasdfasdfas++;
-                if(asdfasdfasfdasfafsddfasdfasdfasdfasdfasdfasdfasfadsdfasdfasfdasdfaadfsdfasdfasdfasdfasdfsdfasdfasdfasdfasdfas > 60){
+                if (asdfasdfasfdasfafsddfasdfasdfasdfasdfasdfasdfasfadsdfasdfasfdasdfaadfsdfasdfasdfasdfasdfsdfasdfasdfasdfasdfas > 60) {
                     break;
                 }
             }
@@ -188,4 +199,12 @@ public class ColorPortal2 extends JavaPlugin {
         return new ArrayList<>(returnList);
     }
 
+    private boolean signUpdater(Location location, String channel) {
+        if (location == null || location.getBlock() == null || !location.getBlock().getType().equals(Material.WALL_SIGN)) {
+            return false;
+        }
+        Sign sign = (Sign) location.getBlock();
+        sign.setLine(1, channel);
+        return true;
+    }
 }
