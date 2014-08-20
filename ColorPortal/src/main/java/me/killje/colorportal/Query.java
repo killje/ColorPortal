@@ -35,9 +35,9 @@ public class Query {
         return select("*");
     }
 
-    public Query select(String... tabels) {
+    public Query select(String... columns) {
         sql = "SELECT ";
-        sql += StringUtils.join(tabels, ", ") + " FROM " + table;
+        sql += StringUtils.join(columns, ", ") + " FROM " + table;
         return this;
     }
 
@@ -101,9 +101,9 @@ public class Query {
         return selectDistinct("*");
     }
 
-    public Query selectDistinct(String... tabels) {
+    public Query selectDistinct(String... columns) {
         sql = "SELECT DISTINCT ";
-        sql = StringUtils.join(tabels, ", ") + " FROM " + table + " ";
+        sql = StringUtils.join(columns, ", ") + " FROM " + table + " ";
         return this;
     }
 
@@ -111,9 +111,14 @@ public class Query {
         sql += whereClause + " ";
         return this;
     }
+    
+    public Query dropTable(){
+        sql = "DROP TABLE " + table;
+        return this;
+    }
 
-    public Query orderBy(boolean desc, String... colums) {
-        sql += StringUtils.join(colums, ", ") + " ";
+    public Query orderBy(boolean desc, String... columns) {
+        sql += StringUtils.join(columns, ", ") + " ";
         if (desc) {
             sql += "DESC ";
         }
@@ -125,8 +130,8 @@ public class Query {
         return this;
     }
 
-    public Query createTabelIfNotExists(String... columsAndType) {
-        sql = "CREATE TABLE IF NOT EXISTS " + table + " (" + StringUtils.join(columsAndType, ", ") + ") ";
+    public Query createTabelIfNotExists(String... columnsAndType) {
+        sql = "CREATE TABLE IF NOT EXISTS " + table + " (" + StringUtils.join(columnsAndType, ", ") + ") ";
         return this;
     }
 

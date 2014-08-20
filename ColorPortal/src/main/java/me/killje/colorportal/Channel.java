@@ -1,6 +1,7 @@
 package me.killje.colorportal;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.UUID;
 import java.util.logging.Level;
 import org.bukkit.Bukkit;
@@ -90,5 +91,24 @@ public class Channel {
         sign.setLine(1, channel + ":" + signAttachedBlock.getData());
         sign.setLine(2, ChatColor.GREEN + "Warps To:");
         sign.setLine(3, portals.get(0).getName());
+    }
+    
+    public boolean hasPortal(int node){
+        for (Portal2 portal : portals) {
+            if (portal.getNode() == node) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    public Collection<Portal2> getPortals(int node){
+        ArrayList<Portal2> portalList = new ArrayList<>();
+        for (Portal2 portal : portalList) {
+            if (portal.getNode() == node) {
+                portalList.add(portal);
+            }
+        }
+        return portalList;
     }
 }

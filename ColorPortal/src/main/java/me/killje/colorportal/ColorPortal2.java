@@ -15,7 +15,6 @@ import java.util.StringTokenizer;
 import java.util.UUID;
 import java.util.logging.Level;
 import me.killje.colorportal.Query.QuaryCreateTable;
-import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.DyeColor;
 import org.bukkit.Location;
@@ -80,12 +79,10 @@ public class ColorPortal2 extends JavaPlugin {
             ResultSet rs;
             ArrayList<Map<String, String>> oldPortals = new ArrayList<>();
             query.connect();
-            Bukkit.getLogger().info(query.getQuery());
             try (PreparedStatement preparedStatement = query.getConnection().prepareStatement(query.getQuery())) {
                 preparedStatement.execute();
                 rs = preparedStatement.getResultSet();
                 while (rs.next()) {
-                    getLogger().info("adding portal");
                     Map<String, String> portal = new HashMap<>();
                     portal.put("name", rs.getString("name"));
                     portal.put("channel", rs.getString("channel"));
@@ -107,18 +104,15 @@ public class ColorPortal2 extends JavaPlugin {
                     oldPortals.add(portal);
                 }
             }
-            getLogger().info(oldPortals.size() + "");
             UUIDFetcher fetcher = new UUIDFetcher(getAllNames(oldPortals));
             Map<String, UUID> namesToUUID = fetcher.call();
             Map<Integer, Map<String, Object>> channels = new HashMap<>();
             Query portalQuery = new Query(getConfig().getString("portalTabel"));
             Statement statement = portalQuery.getConnection().createStatement();
-            int asdfasdfasfdasfafsddfasdfasdfasdfasdfasdfasdfasfadsdfasdfasfdasdfaadfsdfasdfasdfasdfasdfsdfasdfasdfasdfasdfas = 0;
             for (Map<String, String> portal : oldPortals) {
                 int channelNo = Integer.parseInt(portal.get("channel"));
                 String owner = portal.get("owner");
                 String restriction = portal.get("restriction");
-                getLogger().info(channelNo + "");
                 String[] keys = new String[8];
                 Object[] values = new Object[8];
                 keys[0] = "channelID";
@@ -152,10 +146,6 @@ public class ColorPortal2 extends JavaPlugin {
                     }
                     statement.addBatch(portalQuery.insert(keys, values).getQuery());
                 }
-                asdfasdfasfdasfafsddfasdfasdfasdfasdfasdfasdfasfadsdfasdfasfdasdfaadfsdfasdfasdfasdfasdfsdfasdfasdfasdfasdfas++;
-                if (asdfasdfasfdasfafsddfasdfasdfasdfasdfasdfasdfasfadsdfasdfasfdasdfaadfsdfasdfasdfasdfasdfsdfasdfasdfasdfasdfas > 60) {
-                    break;
-                }
             }
             statement.executeBatch();
             Query channelQuery = new Query(getConfig().getString("channelTabel"));
@@ -170,11 +160,11 @@ public class ColorPortal2 extends JavaPlugin {
                     values[i] = entry.getValue();
                     i++;
                 }
-                getLogger().info(i + "");
                 channelQuery.insert(keys, values);
                 statement.addBatch(channelQuery.getQuery());
             }
             statement.executeBatch();
+            query.dropTable();
         } catch (SQLException ex) {
             getLogger().log(Level.SEVERE, "Error while connection to dataBase", ex);
             if (getConfig().getBoolean("shutdownOnError")) {
@@ -186,16 +176,14 @@ public class ColorPortal2 extends JavaPlugin {
                 getServer().shutdown();
             }
         }
+
     }
 
     private ArrayList<String> getAllNames(ArrayList<Map<String, String>> totalList) {
         Set<String> returnList = new HashSet<>();
-        getLogger().info(totalList.size() + "");
         for (Map<String, String> map : totalList) {
-            getLogger().info(map.get("owner"));
-            getLogger().info(returnList.add(map.get("owner")) + "");
+            returnList.add(map.get("owner"));
         }
-        getLogger().info(returnList.size() + "");
         return new ArrayList<>(returnList);
     }
 
