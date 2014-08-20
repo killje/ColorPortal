@@ -9,6 +9,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
+import org.bukkit.entity.Player;
 
 /**
  *
@@ -92,8 +93,8 @@ public class Channel {
         sign.setLine(2, ChatColor.GREEN + "Warps To:");
         sign.setLine(3, portals.get(0).getName());
     }
-    
-    public boolean hasPortal(int node){
+
+    public boolean hasPortal(int node) {
         for (Portal2 portal : portals) {
             if (portal.getNode() == node) {
                 return true;
@@ -101,8 +102,8 @@ public class Channel {
         }
         return false;
     }
-    
-    public Collection<Portal2> getPortals(int node){
+
+    public Collection<Portal2> getPortals(int node) {
         ArrayList<Portal2> portalList = new ArrayList<>();
         for (Portal2 portal : portalList) {
             if (portal.getNode() == node) {
@@ -110,5 +111,24 @@ public class Channel {
             }
         }
         return portalList;
+    }
+
+    public boolean containsBlock(Block block) {
+        for (Portal2 portal2 : portals) {
+            if (portal2.containsBlock(block)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    boolean hasPermission(Block block, Player player) {
+        boolean returnValue = true;
+        for (Portal2 portal2 : portals) {
+            if (!portal2.hasPermission(block, player, player.getUniqueId().equals(owner))) {
+                return false;
+            }
+        }
+        return true;
     }
 }

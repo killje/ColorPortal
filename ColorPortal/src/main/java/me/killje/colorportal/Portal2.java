@@ -2,6 +2,7 @@ package me.killje.colorportal;
 
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.entity.Player;
 
 /**
  *
@@ -38,8 +39,24 @@ public class Portal2 {
     public Block getSignBlock() {
         return signBlock;
     }
-    
-    public int getNode(){
+
+    public int getNode() {
         return node;
     }
+
+    boolean containsBlock(Block block) {
+        return button.equals(block) || sign.equals(block) || signBlock.equals(block) || buttonBlock.equals(block);
+    }
+
+    public boolean hasPermission(Block block, Player player, boolean owner) {
+        if (!containsBlock(block)) {
+            return true;
+        } else {
+            if (owner || player.hasPermission("colorportal.destroy.other")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
 }
