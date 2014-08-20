@@ -103,7 +103,6 @@ public class ColorPortal2 extends JavaPlugin {
                     oldPortals.add(portal);
                 }
             }
-            getLogger().info(oldPortals.size() + "");
             UUIDFetcher fetcher = new UUIDFetcher(getAllNames(oldPortals));
             Map<String, UUID> namesToUUID = fetcher.call();
             Map<Integer, Map<String, Object>> channels = new HashMap<>();
@@ -114,12 +113,11 @@ public class ColorPortal2 extends JavaPlugin {
                 int channelNo = Integer.parseInt(portal.get("channel"));
                 String owner = portal.get("owner");
                 String restriction = portal.get("restriction");
-                getLogger().info(channelNo + "");
                 if (!channels.containsKey(channelNo)) {
                     Map<String, Object> newChannel = new HashMap<>();
                     newChannel.put("owner", namesToUUID.get(owner).toString());
                     newChannel.put("channel", channelNo);
-                    newChannel.put("restriction", restriction);//<<<<<<<<<<<<<<<---------------this needs to be solved!!!!!!!!!!!!!!!
+                    newChannel.put("restriction", restriction);
                     channels.put(channelNo, newChannel);
                 }
                 String[] keys = new String[8];
@@ -179,12 +177,9 @@ public class ColorPortal2 extends JavaPlugin {
 
     private ArrayList<String> getAllNames(ArrayList<Map<String, String>> totalList) {
         Set<String> returnList = new HashSet<>();
-        getLogger().info(totalList.size() + "");
         for (Map<String, String> map : totalList) {
             getLogger().info(map.get("owner"));
-            getLogger().info(returnList.add(map.get("owner")) + "");
         }
-        getLogger().info(returnList.size() + "");
         return new ArrayList<>(returnList);
     }
 

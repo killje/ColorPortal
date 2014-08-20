@@ -4,6 +4,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.SQLTimeoutException;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 import java.util.logging.Level;
@@ -12,11 +13,13 @@ import org.bukkit.ChatColor;
 import org.bukkit.DyeColor;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.SignChangeEvent;
+import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.material.Button;
 
@@ -92,12 +95,46 @@ public class Listener2 implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onBlockBreakMonitor(BlockBreakEvent event) {
-
+        
     }
 
     @EventHandler(priority = EventPriority.LOW)
     public void onBlockBreakLow(BlockBreakEvent event) {
+        if (!ColorPortal.usePerms) {
+            return;
+        }
+        if (!isPortalBlock(event.getBlock())) {
+            return;
+        }
+        if (!hasPermisionToDestroy(event.getBlock(), event.getPlayer())) {
+            event.setCancelled(true);
+        }
+    }
+    
+    private boolean hasPermisionToDestroy(Block block, Player player) {
+        for (Map.Entry<Integer, Channel> entry : channels.entrySet()) {
+            Channel channel = entry.getValue();
+            if(!channel.hasPermission(block, player)){
+                return false;
+            }
+        }
+        return true;
+    }
 
+    @EventHandler(priority = EventPriority.LOW)
+    public void onExplosion(EntityExplodeEvent event) {
+        for (Iterator<Block> it = event.blockList().iterator(); it.hasNext();) {
+            Block block = it.next();
+            if (!isPortalBlock(block)) {
+                return;
+            }
+            for (Map.Entry<Integer, Channel> entry : channels.entrySet()) {
+                Channel channel = entry.getValue();
+                if (channel.containsBlock(block)) {
+                    it.remove();
+                }
+            }
+        }
     }
 
     @EventHandler
@@ -107,7 +144,7 @@ public class Listener2 implements Listener {
         }
         org.bukkit.material.Sign sign = (org.bukkit.material.Sign) event.getBlock().getState().getData();
         Block signBlock = event.getBlock().getRelative(sign.getAttachedFace());
-        if (!isPortalBlock(signBlock)) {
+        if (!isPortalColorBlock(signBlock)) {
             return;
         }
         Block button = signBlock.getLocation().add(0.0D, -1.0D, 0.0D).getBlock();
@@ -167,6 +204,10 @@ public class Listener2 implements Listener {
     }
 
     private boolean isPortalBlock(Block block) {
+        return isPortalColorBlock(block) || isButton(block) || isWallSign(block);
+    }
+
+    private boolean isPortalColorBlock(Block block) {
         return block.getType().equals(Material.WOOL)
                 || block.getType().equals(Material.STAINED_CLAY);
     }
@@ -174,5 +215,9 @@ public class Listener2 implements Listener {
     private boolean isButton(Block block) {
         return block.getType().equals(Material.WOOD_BUTTON)
                 || block.getType().equals(Material.STONE_BUTTON);
+    }
+
+    private boolean isWallSign(Block block) {
+        return block.getType().equals(Material.WALL_SIGN);
     }
 }
