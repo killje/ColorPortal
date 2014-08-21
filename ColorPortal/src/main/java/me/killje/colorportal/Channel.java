@@ -9,7 +9,6 @@ import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
-import org.bukkit.entity.Player;
 
 /**
  *
@@ -75,32 +74,23 @@ public class Channel {
         return owner;
     }
 
-    private void setInactiveSign(Block signBlock) throws ClassCastException {
+    private void setInactiveSign(Sign signBlock) throws ClassCastException {
         if (!signBlock.getType().equals(Material.WALL_SIGN)) {
             throw new ClassCastException();
         }
-        Sign sign = (Sign) signBlock;
+        Sign sign = signBlock;
         sign.setLine(2, "");
         sign.setLine(3, ChatColor.GRAY + "INACTIVE");
     }
 
-    private void setActiveSign(Block signBlock, Block signAttachedBlock) throws ClassCastException {
+    private void setActiveSign(Sign signBlock, Block signAttachedBlock) throws ClassCastException {
         if (!signBlock.getType().equals(Material.WALL_SIGN)) {
             throw new ClassCastException();
         }
-        Sign sign = (Sign) signBlock;
+        Sign sign = signBlock;
         sign.setLine(1, channel + ":" + signAttachedBlock.getData());
         sign.setLine(2, ChatColor.GREEN + "Warps To:");
         sign.setLine(3, portals.get(0).getName());
-    }
-
-    public boolean hasPortal(int node) {
-        for (Portal2 portal : portals) {
-            if (portal.getNode() == node) {
-                return true;
-            }
-        }
-        return false;
     }
 
     public Collection<Portal2> getPortals(int node) {
@@ -111,24 +101,5 @@ public class Channel {
             }
         }
         return portalList;
-    }
-
-    public boolean containsBlock(Block block) {
-        for (Portal2 portal2 : portals) {
-            if (portal2.containsBlock(block)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    boolean hasPermission(Block block, Player player) {
-        boolean returnValue = true;
-        for (Portal2 portal2 : portals) {
-            if (!portal2.hasPermission(block, player, player.getUniqueId().equals(owner))) {
-                return false;
-            }
-        }
-        return true;
     }
 }

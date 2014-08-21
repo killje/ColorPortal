@@ -1,10 +1,12 @@
 package me.killje.colorportal;
 
+import com.avaje.ebean.validation.Future;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.SQLTimeoutException;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.logging.Level;
@@ -24,6 +26,7 @@ import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.material.Button;
+import org.bukkit.metadata.MetadataValue;
 
 /**
  *
@@ -65,7 +68,7 @@ public class Listener2 implements Listener {
                 int channel = rs.getInt("channel");
                 String name = rs.getString("name");
                 UUID world = UUID.fromString(rs.getString("owner"));
-                Block sign = Query.queryToBlock(world, rs.getString("locationSign"));
+                Sign sign = (Sign) Query.queryToBlock(world, rs.getString("locationSign"));
                 Block button = Query.queryToBlock(world, rs.getString("locationButton"));
                 Block signBlock = Query.queryToBlock(world, rs.getString("locationSignBlock"));
                 Block buttonBlock = Query.queryToBlock(world, rs.getString("locationButtonBlock"));
@@ -76,7 +79,7 @@ public class Listener2 implements Listener {
                 } else {
                     material = Material.STAINED_CLAY;
                 }
-                Portal2 portal = new Portal2(name, button, sign, signBlock, buttonBlock, material, color);
+                Portal2 portal = new Portal2(name, button, sign, signBlock, buttonBlock, material, channel, color);
                 channels.get(channel).addPortal(portal);
             }
         } catch (SQLTimeoutException ex) {
@@ -94,71 +97,70 @@ public class Listener2 implements Listener {
 
     @EventHandler
     public void onInteract(PlayerInteractEvent event) {
+        if (!isPortalBlock(event.getClickedBlock())) {
+            return;
+        }
         if (event.getClickedBlock().getType().equals(Material.WALL_SIGN)) {
-            Sign sign = (Sign) event.getClickedBlock();
+            Portal2 portal = (Portal2) event.getClickedBlock().getMetadata("colorPortal").get(0).value();
+            event.setCancelled(true);
             if (event.getAction().equals(Action.RIGHT_CLICK_BLOCK)) {
-                if (rightClickSign(sign, event.getPlayer())) {
-                    event.setCancelled(true);
-                }
+                rightClickSign(portal, event.getPlayer());
             } else if (event.getAction().equals(Action.LEFT_CLICK_BLOCK)) {
-                if (leftClickSign(sign, event.getPlayer())) {
-                    event.setCancelled(true);
-                }
+                leftClickSign(portal, event.getPlayer());
             }
         } else if (isButton(event.getClickedBlock())) {
             if (event.getAction() != Action.RIGHT_CLICK_BLOCK) {
                 return;
             }
-
         }
     }
 
-    private boolean rightClickSign(Sign sign, Player player) {
-        String channelLine = sign.getLine(1);
-        if (!channelLine.matches("[0-9]{1,6}:([0-9]|[0-9][0-9])")) {
-            return false;
-        }
-        String[] channelNode = channelLine.split(":");
-        int channelId = Integer.parseInt(channelNode[0]);
-        int node = Integer.parseInt(channelNode[1]);
-        if (!channels.containsKey(channelId)) {
-            return false;
-        }
-        Channel channel = channels.get(channelId);
-        if (!channel.hasPortal(node)) {
-            return false;
-        }
-        Portal2 portal = null;
-        for (Portal2 portalByNode : channel.getPortals(node)) {
-            if (portalByNode.getSign().getLocation().equals(sign.getLocation())) {
-                portal = portalByNode;
-                break;
-            }
-        }
-        if (portal == null) {
-            return false;
+    private void rightClickSign(Portal2 portal, Player player) {
+        boolean isOwner = channels.get(portal.getChannel()).getOwner().equals(player.getUniqueId());
+        if (!portal.hasChangePermission(player, isOwner)) {
+            player.sendMessage(ChatColor.RED + "You do not have the permission to change this sign destination.");
+            return;
         }
         SignPlayerHelper sph;
         if (!sphs.containsKey(player)) {
-            sph = new SignPlayerHelper(player, sign);
+            sph = new SignPlayerHelper(player, portal.getSign());
             sphs.put(player, sph);
-        }else{
+            sph.init();
+            return;
+        } else {
             sph = sphs.get(player);
-            if (!sph.isSameSign(sign.getLocation())) {
-                sph.newSign(sign);
+            if (!sph.isSameSign(portal.getSign().getLocation())) {
+                sph.newSign(portal.getSign());
+                sph.init();
+                return;
             }
         }
-        
-        return false;
+        sph.next();
     }
 
-    private boolean leftClickSign(Sign sign, Player player) {
-        return false;
+    private void leftClickSign(Portal2 portal, Player player) {
+        boolean isOwner = channels.get(portal.getChannel()).getOwner().equals(player.getUniqueId());
+        if (!portal.hasChangePermission(player, isOwner)) {
+            player.sendMessage(ChatColor.RED + "You do not have the permission to change this sign destination.");
+            return;
+        }
+        if (!sphs.containsKey(player)) {
+            return;
+        }
+        SignPlayerHelper sph = sphs.get(player);
+        if (!sph.isSameSign(portal.getSign().getLocation())) {
+            return;
+        }
+        String currentName = sph.getCurrentName();
+        portal.setDestination(currentName);
+        throw new UnsupportedOperationException("not yet implemented");
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onBlockBreakMonitor(BlockBreakEvent event) {
-        
+        throw new UnsupportedOperationException("not yet implemented");
+        /*event.getBlock().removeMetadata("isColorPortalBlock", plugin);
+         event.getBlock().removeMetadata("colorPortal", plugin);*/
     }
 
     @EventHandler(priority = EventPriority.LOW)
@@ -169,33 +171,21 @@ public class Listener2 implements Listener {
         if (!isPortalBlock(event.getBlock())) {
             return;
         }
-        if (!hasPermisionToDestroy(event.getBlock(), event.getPlayer())) {
+        List<MetadataValue> colorPortal = event.getBlock().getMetadata("colorPortal");
+        Portal2 portal = (Portal2) colorPortal.get(0).value();
+        boolean isOwner = channels.get(portal.getChannel()).getOwner().equals(event.getPlayer().getUniqueId());
+        if (!portal.hasDestroyPermission(event.getPlayer(), isOwner)) {
+            event.getPlayer().sendMessage(ChatColor.RED + "You do not have the permission to destroy a color portal");
             event.setCancelled(true);
         }
-    }
-    
-    private boolean hasPermisionToDestroy(Block block, Player player) {
-        for (Map.Entry<Integer, Channel> entry : channels.entrySet()) {
-            Channel channel = entry.getValue();
-            if(!channel.hasPermission(block, player)){
-                return false;
-            }
-        }
-        return true;
     }
 
     @EventHandler(priority = EventPriority.LOW)
     public void onExplosion(EntityExplodeEvent event) {
         for (Iterator<Block> it = event.blockList().iterator(); it.hasNext();) {
             Block block = it.next();
-            if (!isPortalBlock(block)) {
-                return;
-            }
-            for (Map.Entry<Integer, Channel> entry : channels.entrySet()) {
-                Channel channel = entry.getValue();
-                if (channel.containsBlock(block)) {
-                    it.remove();
-                }
+            if (isPortalBlock(block)) {
+                it.remove();
             }
         }
     }
@@ -205,8 +195,8 @@ public class Listener2 implements Listener {
         if (event.getBlock().getType() != Material.WALL_SIGN) {
             return;
         }
-        org.bukkit.material.Sign sign = (org.bukkit.material.Sign) event.getBlock().getState().getData();
-        Block signBlock = event.getBlock().getRelative(sign.getAttachedFace());
+        Sign sign = (Sign) event.getBlock();
+        Block signBlock = event.getBlock().getRelative(((org.bukkit.material.Sign) event.getBlock().getState().getData()).getAttachedFace());
         if (!isPortalColorBlock(signBlock)) {
             return;
         }
@@ -261,13 +251,16 @@ public class Listener2 implements Listener {
         } else {
             channels.put(channel, new Channel(owner, channel));
         }
-        Portal2 newPortal = new Portal2(name, button, event.getBlock(),
-                signBlock, buttonBlock, signBlock.getType(), signColor.getDyeData());
+        Portal2 newPortal = new Portal2(name, button, sign,
+                signBlock, buttonBlock, signBlock.getType(), channel, signColor.getDyeData());
         channels.get(channel).addPortal(newPortal);
     }
 
     private boolean isPortalBlock(Block block) {
-        return isPortalColorBlock(block) || isButton(block) || isWallSign(block);
+        if (!block.hasMetadata("isColorPortalBlock")) {
+            return false;
+        }
+        return block.getMetadata("isColorPortalBlock").get(0).asBoolean();
     }
 
     private boolean isPortalColorBlock(Block block) {

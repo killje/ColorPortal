@@ -3,9 +3,8 @@ package me.killje.colorportal;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.block.Sign;
 import org.bukkit.entity.Player;
-import org.bukkit.metadata.LazyMetadataValue;
-import org.bukkit.metadata.MetadataValue;
 import org.bukkit.metadata.MetadataValueAdapter;
 
 /**
@@ -16,15 +15,16 @@ public class Portal2 {
 
     private final String name;
     private final Block button;
-    private final Block sign;
+    private final Sign sign;
     private final Block signBlock;
     private final Block buttonBlock;
     private final Material material;
+    private final int channel;
     private final int node;
 
-    public Portal2(String name, Block button, Block sign, Block signBlock, Block buttonBlock, Material material, int node) {
+    public Portal2(String name, Block button, Sign sign, Block signBlock, Block buttonBlock, Material material, int channel, int node) {
         this.name = name;
-        MetadataValueAdapter mva = new MetadataValueAdapter(Bukkit.getPluginManager().getPlugin("ColorPortal2")) {
+        MetadataValueAdapter mvaIsColorBlock = new MetadataValueAdapter(Bukkit.getPluginManager().getPlugin("ColorPortal2")) {
             private boolean isColorBlock = true;
 
             @Override
@@ -37,19 +37,37 @@ public class Portal2 {
                 isColorBlock = false;
             }
         };
-        button.setMetadata("isColorPortalBlock", mva);
-        sign.setMetadata("isColorPortalBlock", mva);
-        signBlock.setMetadata("isColorPortalBlock", mva);
-        buttonBlock.setMetadata("isColorPortalBlock", mva);
+        MetadataValueAdapter mvaPortal = new MetadataValueAdapter(Bukkit.getPluginManager().getPlugin("ColorPortal2")) {
+            private Portal2 portal = Portal2.this;
+
+            @Override
+            public Object value() {
+                return portal;
+            }
+
+            @Override
+            public void invalidate() {
+                portal = null;
+            }
+        };
+        button.setMetadata("isColorPortalBlock", mvaIsColorBlock);
+        sign.setMetadata("isColorPortalBlock", mvaIsColorBlock);
+        signBlock.setMetadata("isColorPortalBlock", mvaIsColorBlock);
+        buttonBlock.setMetadata("isColorPortalBlock", mvaIsColorBlock);
+        button.setMetadata("colorPortal", mvaPortal);
+        sign.setMetadata("colorPortal", mvaPortal);
+        signBlock.setMetadata("colorPortal", mvaPortal);
+        buttonBlock.setMetadata("colorPortal", mvaPortal);
         this.button = button;
         this.sign = sign;
         this.signBlock = signBlock;
         this.buttonBlock = buttonBlock;
         this.material = material;
+        this.channel = channel;
         this.node = node;
     }
 
-    public Block getSign() {
+    public Sign getSign() {
         return sign;
     }
 
@@ -65,19 +83,19 @@ public class Portal2 {
         return node;
     }
 
-    boolean containsBlock(Block block) {
-        return button.equals(block) || sign.equals(block) || signBlock.equals(block) || buttonBlock.equals(block);
+    public boolean hasDestroyPermission(Player player, boolean owner) {
+        return owner || player.hasPermission("colorportal.destroy.other");
+    }
+    
+    public boolean hasChangePermission(Player player, boolean owner) {
+        return owner || player.hasPermission("colorportal.change.other");
     }
 
-    public boolean hasPermission(Block block, Player player, boolean owner) {
-        if (!containsBlock(block)) {
-            return true;
-        } else {
-            if (owner || player.hasPermission("colorportal.destroy.other")) {
-                return true;
-            }
-        }
-        return false;
+    public int getChannel() {
+        return channel;
     }
-
+    
+    public void setDestination(String name){
+        sign.setLine(3, name);
+    }
 }

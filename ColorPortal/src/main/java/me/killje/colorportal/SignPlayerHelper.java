@@ -29,4 +29,16 @@ public class SignPlayerHelper {
         this.sign = sign;
         oldMessage = sign.getLines();
     }
+
+    public String getCurrentName() {
+        throw new UnsupportedOperationException("Not supported yet. at: " + getClass().getCanonicalName() + ":" + getClass().getEnclosingMethod().getName() + ";");
+    }
+    
+    public void next(){
+        throw new UnsupportedOperationException("Not supported yet. at: " + getClass().getCanonicalName() + ":" + getClass().getEnclosingMethod().getName() + ";");
+    }
+
+    public void init() {
+        throw new UnsupportedOperationException("Not supported yet. at: " + getClass().getCanonicalName() + ":" + getClass().getEnclosingMethod().getName() + ";");
+    }
 }
