@@ -113,13 +113,6 @@ public class ColorPortal2 extends JavaPlugin {
                 int channelNo = Integer.parseInt(portal.get("channel"));
                 String owner = portal.get("owner");
                 String restriction = portal.get("restriction");
-                if (!channels.containsKey(channelNo)) {
-                    Map<String, Object> newChannel = new HashMap<>();
-                    newChannel.put("owner", namesToUUID.get(owner).toString());
-                    newChannel.put("channel", channelNo);
-                    newChannel.put("restriction", restriction);
-                    channels.put(channelNo, newChannel);
-                }
                 String[] keys = new String[8];
                 Object[] values = new Object[8];
                 keys[0] = "channelID";
