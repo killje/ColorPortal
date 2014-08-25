@@ -98,4 +98,8 @@ public class Portal2 {
     public void setDestination(String name){
         sign.setLine(3, name);
     }
+
+    public Block getButton() {
+        return button;
+    }
 }

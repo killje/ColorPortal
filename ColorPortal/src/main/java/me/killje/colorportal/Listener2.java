@@ -1,6 +1,5 @@
 package me.killje.colorportal;
 
-import com.avaje.ebean.validation.Future;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.SQLTimeoutException;
@@ -13,9 +12,11 @@ import java.util.logging.Level;
 import org.apache.commons.lang.math.NumberUtils;
 import org.bukkit.ChatColor;
 import org.bukkit.DyeColor;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -100,8 +101,8 @@ public class Listener2 implements Listener {
         if (!isPortalBlock(event.getClickedBlock())) {
             return;
         }
-        if (event.getClickedBlock().getType().equals(Material.WALL_SIGN)) {
-            Portal2 portal = (Portal2) event.getClickedBlock().getMetadata("colorPortal").get(0).value();
+        Portal2 portal = (Portal2) event.getClickedBlock().getMetadata("colorPortal").get(0).value();
+        if (isWallSign(event.getClickedBlock())) {
             event.setCancelled(true);
             if (event.getAction().equals(Action.RIGHT_CLICK_BLOCK)) {
                 rightClickSign(portal, event.getPlayer());
@@ -110,9 +111,63 @@ public class Listener2 implements Listener {
             }
         } else if (isButton(event.getClickedBlock())) {
             if (event.getAction() != Action.RIGHT_CLICK_BLOCK) {
+                rightClickBlock(portal, event.getPlayer());
+            }
+        }
+    }
+
+    private void rightClickBlock(Portal2 portal, Player player) {
+        String toLocation = portal.getSign().getLine(3);
+        SignPlayerHelper sph = sphs.get(player);
+        if (sph != null) {
+            if (sph.isSameSign(portal.getSign())) {
+                toLocation = sph.getCurrentDestination();
+                sph.setCurrentName();
+            }
+        }
+        Portal2 toPortal = null;
+        for (Portal2 portalTo : channels.get(portal.getChannel()).getPortals(portal.getNode())) {
+            if (portalTo.getName().equals(toLocation)) {
+                toPortal = portalTo;
+                break;
+            }
+        }
+        if (toPortal == null) {
+            player.sendMessage("Could not find location, try changing the destination");
+            return;
+        }
+        double distance = player.getLocation().distance(portal.getButton().getLocation());
+        Block destination = getLowestBlock(portal.getButton().getLocation().add(0, -1, 0));
+        if (destination == null) {
+            player.sendMessage("Destination portal is blocked! Make sure the block below the button is air");
+            return;
+        }
+        Location destinationLocation = destination.getLocation();
+        destinationLocation.setPitch(0);
+        destinationLocation.setYaw(((org.bukkit.material.Button) portal.getButton().getState().getData()).getFacing().getOppositeFace().ordinal());
+        for (Entity entity : player.getNearbyEntities(distance, distance, distance)) {
+            if (isBetween(player.getLocation(), entity.getLocation(), portal.getButton().getLocation())) {
+                entity.teleport(destinationLocation.add(0, 1, 0));
                 return;
             }
         }
+        player.teleport(destinationLocation.add(0, 1, 0));
+    }
+
+    private boolean isBetween(Location player, Location entity, Location button) {
+        return player.distance(button) > entity.distance(button);
+    }
+
+    private Block getLowestBlock(Location location) {
+        if (!location.getBlock().getType().equals(Material.AIR)) {
+            return null;
+        }
+        Block returnBlock;
+        do {
+            returnBlock = location.getBlock();
+            location.add(0, -1, 0);
+        } while (location.getBlock().getType().equals(Material.AIR));
+        return returnBlock;
     }
 
     private void rightClickSign(Portal2 portal, Player player) {
@@ -123,14 +178,14 @@ public class Listener2 implements Listener {
         }
         SignPlayerHelper sph;
         if (!sphs.containsKey(player)) {
-            sph = new SignPlayerHelper(player, portal.getSign());
+            sph = new SignPlayerHelper(player, portal, channels.get(portal.getChannel()));
             sphs.put(player, sph);
             sph.init();
             return;
         } else {
             sph = sphs.get(player);
-            if (!sph.isSameSign(portal.getSign().getLocation())) {
-                sph.newSign(portal.getSign());
+            if (!sph.isSameSign(portal.getSign())) {
+                sph.newSign(channels.get(portal.getChannel()), portal);
                 sph.init();
                 return;
             }
@@ -148,10 +203,10 @@ public class Listener2 implements Listener {
             return;
         }
         SignPlayerHelper sph = sphs.get(player);
-        if (!sph.isSameSign(portal.getSign().getLocation())) {
+        if (!sph.isSameSign(portal.getSign())) {
             return;
         }
-        String currentName = sph.getCurrentName();
+        String currentName = sph.getCurrentDestination();
         portal.setDestination(currentName);
         throw new UnsupportedOperationException("not yet implemented");
     }
